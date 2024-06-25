@@ -1,6 +1,8 @@
 import { Response } from "express";
 
 export function handleErrors(error: unknown, res: Response) {
+  console.error(error);
+
   if (error instanceof Error) {
     const { message } = error;
     if (error instanceof InvalidBodyError) {
@@ -17,6 +19,13 @@ export function handleErrors(error: unknown, res: Response) {
   }
 
   return res.status(500).json({ error: "Server error" });
+}
+
+export class InvalidParamError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidParamError";
+  }
 }
 
 export class InvalidBodyError extends Error {

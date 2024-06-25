@@ -1,2 +1,2 @@
-import { handler } from "@/app";
+import { handler } from "@/main";
 export { handler };
