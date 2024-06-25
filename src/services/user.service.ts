@@ -1,10 +1,23 @@
-import { isValidObjectId, HydratedDocument } from "mongoose";
+import {
+  FilterQuery,
+  HydratedDocument,
+  isValidObjectId,
+  Types,
+} from "mongoose";
 import UserModel, { IUser, UserDocument } from "@/models/user.model";
 import { InvalidBodyError, NotFoundError } from "@/utils/errors";
 import { hashPassword } from "@/utils/auth";
 
 class UserService {
-  public async getUserById(id: string): Promise<HydratedDocument<IUser>> {
+  public async getUsers(
+    filter?: FilterQuery<UserDocument>,
+  ): Promise<HydratedDocument<IUser>[]> {
+    return UserModel.find(filter ?? {});
+  }
+
+  public async getUserById(
+    id?: string | Types.ObjectId,
+  ): Promise<HydratedDocument<IUser>> {
     if (!isValidObjectId(id)) {
       throw new InvalidBodyError("Invalid id");
     }
@@ -16,10 +29,6 @@ class UserService {
     }
 
     return existingUser.toObject();
-  }
-
-  public async getUsers(): Promise<HydratedDocument<IUser>[]> {
-    return UserModel.find();
   }
 
   public async updateUser(

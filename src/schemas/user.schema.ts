@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ObjectId } from "mongoose";
+import { Types } from "mongoose";
 
 export const UpdateBody = z
   .object({
@@ -11,7 +11,9 @@ export const UpdateBody = z
     city: z.string().optional(),
     postal_code: z.string().optional(),
     phone: z.string().optional(),
-    customers: z.array(z.string()).optional(),
+    customers: z
+      .array(z.string().transform((val) => new Types.ObjectId(val)))
+      .optional(),
     updated_at: z.date().default(() => new Date()),
   })
   .strict();

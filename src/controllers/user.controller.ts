@@ -1,32 +1,26 @@
 import { Request, Response } from "express";
-import { handleErrors, UnauthorizedError } from "@/utils/errors";
+import { ForbiddenError, handleErrors } from "@/utils/errors";
 import UserService from "@/services/user.service";
 import { scope } from "@/utils/auth";
 import { validateBody } from "@/schemas";
 import { UpdateBody } from "@/schemas/user.schema";
-import UserModel from "@/models/user.model";
+import { IUser } from "@/models/user.model";
+import { HydratedDocument, Types } from "mongoose";
 
 class UserController {
   constructor(private userService = new UserService()) {}
 
-  @scope("user:read", UserModel)
-  public async getUser(req: Request, res: Response) {
+  @scope("user:read")
+  public async getUsers(req: Request, res: Response) {
     try {
-      const userId = req.params.id;
-      const user = await this.userService.getUserById(userId);
+      const requestingUser = req.user;
+      let users: HydratedDocument<IUser>[];
 
-      return res.status(200).json({
-        user,
-      });
-    } catch (error) {
-      handleErrors(error, res);
-    }
-  }
-
-  @scope()
-  public async getUsers(_req: Request, res: Response) {
-    try {
-      const users = await this.userService.getUsers();
+      if (requestingUser?.is_admin) {
+        users = await this.userService.getUsers({});
+      } else {
+        users = Array(await this.userService.getUserById(requestingUser?._id));
+      }
 
       return res.status(200).json({
         users,
@@ -36,16 +30,53 @@ class UserController {
     }
   }
 
-  @scope("user:update", UserModel)
+  @scope("user:read")
+  public async getUser(req: Request, res: Response) {
+    try {
+      const isAdmin = req.user?.is_admin ?? false;
+      const requestingUserId = req.user?._id;
+      const userId = new Types.ObjectId(req.params.id);
+
+      let user: HydratedDocument<IUser>;
+
+      if (isAdmin || requestingUserId?.equals(userId)) {
+        user = await this.userService.getUserById(userId);
+      } else {
+        throw new ForbiddenError("You are not authorized to view this user");
+      }
+
+      return res.status(200).json({
+        user,
+      });
+    } catch (error) {
+      handleErrors(error, res);
+    }
+  }
+
+  @scope("user:update")
   public async updateUser(req: Request, res: Response) {
     try {
       const updateBody = validateBody(req, UpdateBody);
-      const { userId } = req.decoded;
-      const { is_admin: isAdmin } = await this.userService.getUserById(userId);
+      const requestingUserId = req.user?._id;
+      const isAdmin = req.user?.is_admin ?? false;
       const { id: userUpdateId } = req.params;
 
-      if (!isAdmin && updateBody.customers) {
-        throw new UnauthorizedError("Only admins may update customers");
+      if (!isAdmin) {
+        if (requestingUserId && !requestingUserId.equals(userUpdateId)) {
+          throw new ForbiddenError(
+            "You are not authorized to update this user",
+          );
+        }
+
+        const validFields = UpdateBody.omit({
+          customers: true,
+        })
+          .strict()
+          .safeParse(updateBody);
+
+        if (!validFields.success) {
+          throw new ForbiddenError("Only admins may update these fields");
+        }
       }
 
       const updatedUser = await this.userService.updateUser(
@@ -65,8 +96,17 @@ class UserController {
   @scope()
   public async deleteUser(req: Request, res: Response) {
     try {
-      const { userId } = req.decoded;
+      const requestingUserId = req.user?._id;
+      const isAdmin = req.user?.is_admin ?? false;
       const { id: userDeleteId } = req.params;
+
+      if (!isAdmin) {
+        if (requestingUserId && !requestingUserId.equals(userDeleteId)) {
+          throw new ForbiddenError(
+            "You are not authorized to delete this user",
+          );
+        }
+      }
 
       const deletedUser = await this.userService.deleteUser(userDeleteId);
 

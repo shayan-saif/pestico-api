@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "@/app";
 import AuthService from "@/services/auth.service";
-import UserModel from "@/models/user.model";
+import { Types } from "mongoose";
 
 describe("/user", () => {
   let authService: AuthService;
@@ -18,25 +18,23 @@ describe("/user", () => {
     postal_code: "12345",
     phone: "123-456-7890",
   };
-  let userId: string;
+  let userId: Types.ObjectId;
 
   const adminUser = {
     ...user,
     email: "testadminuser@example.ca",
     is_admin: true,
   };
-  let adminUserId: string;
+  let adminUserId: Types.ObjectId;
 
   beforeEach(async () => {
     authService = new AuthService();
 
-    await authService.register(user);
-    await authService.register(adminUser);
+    const createdUserRecord = await authService.register(user);
+    const createdAdminUserRecord = await authService.register(adminUser);
 
-    const users = await UserModel.find();
-
-    userId = users[0]?._id?.toString() ?? "";
-    adminUserId = users[1]?._id?.toString() ?? "";
+    userId = createdUserRecord._id;
+    adminUserId = createdAdminUserRecord._id;
   });
 
   describe("GET /user", () => {
@@ -53,7 +51,7 @@ describe("/user", () => {
       expect(response.status).toBe(403);
     });
 
-    it("should return 403 if a user is not an admin", async () => {
+    it("should return 200 if a user is not an admin, should return an array with just their own user record", async () => {
       const loginResponse = await request(app)
         .post("/auth/login")
         .send({ email: user.email, password: user.password });
@@ -62,7 +60,10 @@ describe("/user", () => {
         .get("/user")
         .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("users");
+      expect(response.body.users).toHaveLength(1);
+      expect(response.body.users[0]).not.toHaveProperty("password");
     });
 
     it("should return the list of users if a user is an admin", async () => {
@@ -219,7 +220,9 @@ describe("/user", () => {
           customers: ["6679ffe2dc6c10ac1b61b54c", "6679ffe8811e76e66515eafc"],
         });
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Only admins may update these fields");
     });
 
     it("should return 201 if an admin is updating the customers field on a user record", async () => {
@@ -264,6 +267,20 @@ describe("/user", () => {
         .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
       expect(response.status).toBe(403);
+    });
+
+    it("should return 404 if the user does not exist", async () => {
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .delete(`/user/6679ffe2dc6c10ac1b61b54c`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("User not found");
     });
 
     it("should return 200 if a user is an admin deleting another user", async () => {

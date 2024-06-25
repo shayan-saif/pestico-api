@@ -1,7 +1,7 @@
 require("dotenv").config();
 import express from "express";
 import cookieParser from "cookie-parser";
-import { auth, user } from "@/routes";
+import { auth, user, customer } from "@/routes";
 import connectDatabase from "./models/database";
 
 const app = express();
@@ -14,5 +14,6 @@ app.use(cookieParser());
 
 app.use("/auth", auth);
 app.use("/user", user);
+app.use("/customer", customer);
 
 export default app;

@@ -1,4 +1,4 @@
-import UserModel, { IUser, UserDocument } from "@/models/user.model";
+import UserModel, { IUser } from "@/models/user.model";
 import { InvalidBodyError, UnauthorizedError } from "@/utils/errors";
 import bcrypt from "bcryptjs";
 import { hashPassword, signToken } from "@/utils/auth";
@@ -30,8 +30,6 @@ class AuthService {
       email,
       deleted_at: null,
     }).select("+password");
-
-    console.log({ existingUser });
 
     const isPasswordMatch = bcrypt.compareSync(
       password,
