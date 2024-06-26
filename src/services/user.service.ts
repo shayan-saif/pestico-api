@@ -12,7 +12,10 @@ class UserService {
   public async getUsers(
     filter?: FilterQuery<UserDocument>,
   ): Promise<HydratedDocument<IUser>[]> {
-    return UserModel.find(filter ?? {});
+    return UserModel.find({
+      deleted_at: null,
+      ...filter,
+    });
   }
 
   public async getUserById(
@@ -22,7 +25,10 @@ class UserService {
       throw new InvalidBodyError("Invalid id");
     }
 
-    const existingUser = await UserModel.findById(id);
+    const existingUser = await UserModel.findOne({
+      _id: id,
+      deleted_at: null,
+    });
 
     if (!existingUser) {
       throw new NotFoundError("User not found");
@@ -32,7 +38,7 @@ class UserService {
   }
 
   public async updateUser(
-    id: string,
+    id: string | Types.ObjectId,
     update: Partial<IUser>,
   ): Promise<HydratedDocument<IUser>> {
     if (!isValidObjectId(id)) {
@@ -53,9 +59,16 @@ class UserService {
       update.password = await hashPassword(update.password);
     }
 
-    const updatedUser = await UserModel.findByIdAndUpdate(id, update, {
-      new: true,
-    });
+    const updatedUser = await UserModel.findOneAndUpdate(
+      {
+        _id: id,
+        deleted_at: null,
+      },
+      update,
+      {
+        new: true,
+      },
+    );
 
     if (!updatedUser) {
       throw new NotFoundError("User not found");
@@ -64,13 +77,18 @@ class UserService {
     return updatedUser.toObject();
   }
 
-  public async deleteUser(id: string): Promise<HydratedDocument<IUser>> {
+  public async deleteUser(
+    id: string | Types.ObjectId,
+  ): Promise<HydratedDocument<IUser>> {
     if (!isValidObjectId(id)) {
       throw new InvalidBodyError("Invalid id");
     }
 
-    const deletedUser = await UserModel.findByIdAndUpdate(
-      id,
+    const deletedUser = await UserModel.findOneAndUpdate(
+      {
+        _id: id,
+        deleted_at: null,
+      },
       { deleted_at: new Date() },
       { new: true },
     );

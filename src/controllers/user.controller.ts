@@ -17,7 +17,7 @@ class UserController {
       let users: HydratedDocument<IUser>[];
 
       if (requestingUser?.is_admin) {
-        users = await this.userService.getUsers({});
+        users = await this.userService.getUsers();
       } else {
         users = Array(await this.userService.getUserById(requestingUser?._id));
       }

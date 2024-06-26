@@ -88,6 +88,24 @@ describe("/customer", () => {
       expect(response.body).toHaveProperty("customers");
       expect(response.body.customers).toHaveLength(3);
     });
+
+    it("should not return deleted customers", async () => {
+      await CustomerModel.create(
+        buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/customer")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("customers");
+      expect(response.body.customers).toHaveLength(0);
+    });
   });
 
   describe("GET /customer/:id", () => {
@@ -154,6 +172,24 @@ describe("/customer", () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("customer");
+    });
+
+    it("should return 404 if querying a deleted customer", async () => {
+      const deletedCustomer = await CustomerModel.create(
+        buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get(`/customer/${deletedCustomer._id}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Customer not found");
     });
   });
 
@@ -304,6 +340,25 @@ describe("/customer", () => {
       expect(response.body.customer.invoices_per_month).toBe(3);
       expect(response.body.customer.user_id).toBe("6679ffe2dc6c10ac1b61b54c");
     });
+
+    it("should return 404 if updating a deleted customer", async () => {
+      const deletedCustomer = await CustomerModel.create(
+        buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .patch(`/customer/${deletedCustomer._id}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`)
+        .send({ name: "Updated Name" });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Customer not found");
+    });
   });
 
   describe("DELETE /customer/:id", () => {
@@ -370,6 +425,24 @@ describe("/customer", () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("customer");
       expect(response.body.customer.deleted_at).toBeTruthy();
+    });
+
+    it("should return 404 if deleting a deleted customer", async () => {
+      const deletedCustomer = await CustomerModel.create(
+        buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .delete(`/customer/${deletedCustomer._id}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Customer not found");
     });
   });
 });

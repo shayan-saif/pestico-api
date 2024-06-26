@@ -17,7 +17,7 @@ class CustomerController {
       let customers: HydratedDocument<ICustomer>[];
 
       if (requestingUser?.is_admin) {
-        customers = await this.customerService.getCustomers({});
+        customers = await this.customerService.getCustomers();
       } else {
         customers = await this.customerService.getCustomers({
           user_id: requestingUser?._id,

@@ -14,7 +14,10 @@ class CustomerService {
   public async getCustomers(
     filter?: FilterQuery<CustomerDocument>,
   ): Promise<HydratedDocument<ICustomer>[]> {
-    return CustomerModel.find(filter ?? {});
+    return CustomerModel.find({
+      deleted_at: null,
+      ...filter,
+    });
   }
 
   public async getCustomerById(
@@ -24,7 +27,10 @@ class CustomerService {
       throw new InvalidBodyError("Invalid id");
     }
 
-    const existingCustomer = await CustomerModel.findById(id);
+    const existingCustomer = await CustomerModel.findOne({
+      _id: id,
+      deleted_at: null,
+    });
 
     if (!existingCustomer) {
       throw new NotFoundError("Customer not found");
@@ -41,9 +47,16 @@ class CustomerService {
       throw new InvalidBodyError("Invalid id");
     }
 
-    const updatedCustomer = await CustomerModel.findByIdAndUpdate(id, update, {
-      new: true,
-    });
+    const updatedCustomer = await CustomerModel.findOneAndUpdate(
+      {
+        _id: id,
+        deleted_at: null,
+      },
+      update,
+      {
+        new: true,
+      },
+    );
 
     if (!updatedCustomer) {
       throw new NotFoundError("Customer not found");
@@ -59,8 +72,11 @@ class CustomerService {
       throw new InvalidBodyError("Invalid id");
     }
 
-    const deletedCustomer = await CustomerModel.findByIdAndUpdate(
-      id,
+    const deletedCustomer = await CustomerModel.findOneAndUpdate(
+      {
+        _id: id,
+        deleted_at: null,
+      },
       { deleted_at: new Date() },
       { new: true },
     );

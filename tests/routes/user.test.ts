@@ -2,9 +2,11 @@ import request from "supertest";
 import app from "@/app";
 import AuthService from "@/services/auth.service";
 import { Types } from "mongoose";
+import UserService from "@/services/user.service";
 
 describe("/user", () => {
   let authService: AuthService;
+  let userService: UserService;
 
   const user = {
     email: "testuser@example.ca",
@@ -29,6 +31,7 @@ describe("/user", () => {
 
   beforeEach(async () => {
     authService = new AuthService();
+    userService = new UserService();
 
     const createdUserRecord = await authService.register(user);
     const createdAdminUserRecord = await authService.register(adminUser);
@@ -79,6 +82,22 @@ describe("/user", () => {
       expect(response.body).toHaveProperty("users");
       expect(response.body.users).toHaveLength(2);
       expect(response.body.users[0]).not.toHaveProperty("password");
+    });
+
+    it("should not return deleted users", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/user")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("users");
+      expect(response.body.users).toHaveLength(1);
     });
   });
 
@@ -134,6 +153,22 @@ describe("/user", () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("user");
       expect(response.body.user).not.toHaveProperty("password");
+    });
+
+    it("should return 404 if querying a deleted user", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get(`/user/${userId}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("User not found");
     });
   });
 
@@ -241,6 +276,23 @@ describe("/user", () => {
       expect(response.body).toHaveProperty("user");
       expect(response.body.user.customers).toHaveLength(2);
     });
+
+    it("should return 404 when updating a deleted user", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .patch(`/user/${userId}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`)
+        .send({ name: "Updated Name" });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("User not found");
+    });
   });
 
   describe("DELETE /user/:id", () => {
@@ -296,6 +348,22 @@ describe("/user", () => {
       expect(response.body).toHaveProperty("user");
       expect(response.body.user).not.toHaveProperty("password");
       expect(response.body.user.deleted_at).toBeTruthy();
+    });
+
+    it("should return 404 when deleting a deleted user", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .delete(`/user/${userId}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("User not found");
     });
   });
 });

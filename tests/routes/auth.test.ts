@@ -1,9 +1,13 @@
 import request from "supertest";
 import app from "@/app";
 import AuthService from "@/services/auth.service";
+import UserService from "@/services/user.service";
+import { Types } from "mongoose";
 
 describe("/auth", () => {
   let authService: AuthService;
+  let userService: UserService;
+
   const user = {
     email: "testuser@example.ca",
     password: "somelongpassword",
@@ -16,16 +20,24 @@ describe("/auth", () => {
     postal_code: "12345",
     phone: "123-456-7890",
   };
+  let userId: Types.ObjectId;
+
   const adminUser = {
     ...user,
     email: "testadminuser@example.ca",
     is_admin: true,
   };
+  let adminUserId: Types.ObjectId;
 
   beforeEach(async () => {
     authService = new AuthService();
-    await authService.register(user);
-    await authService.register(adminUser);
+    userService = new UserService();
+
+    const createdUserRecord = await authService.register(user);
+    const createdAdminUserRecord = await authService.register(adminUser);
+
+    userId = createdUserRecord._id;
+    adminUserId = createdAdminUserRecord._id;
   });
 
   describe("GET /verify", () => {
@@ -75,6 +87,18 @@ describe("/auth", () => {
         token: expect.any(String),
       });
     });
+
+    it("should not login if a user is deleted", async () => {
+      const deletedUser = await userService.deleteUser(userId);
+
+      const response = await request(app)
+        .post("/auth/login")
+        .send({ email: user.email, password: user.password });
+
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toMatch("Invalid email or password");
+    });
   });
 
   describe("POST /register", () => {
@@ -120,6 +144,21 @@ describe("/auth", () => {
           ...user,
           email: "someotheruser@example.com",
         });
+
+      expect(response.status).toBe(201);
+    });
+
+    it("should return 201 if the email belongs to a deleted user", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .post("/auth/register")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`)
+        .send(user);
 
       expect(response.status).toBe(201);
     });
