@@ -7,8 +7,6 @@ provider:
   stage: ${opt:stage, 'dev'}
   environment:
     STAGE: ${self:provider.stage}
-    COGNITO_USER_POOL_ID: us-east-1_i0CmHMrGQ
-    COGNITO_CLIENT_ID: vbekr20j6fner6vhg66kp7nrn
     JWT_SECRET: "secret"
     MONGODB_URI: "mongodb+srv://shayan:whFQgge7Cv9ocfo8DYGE@pestico-manager.jaqcn3o.mongodb.net"
   iamRoleStatements:
@@ -18,11 +16,6 @@ provider:
         - logs:CreateLogStream
         - logs:PutLogEvents
       Resource: "arn:aws:logs:*:*:*"
-    - Effect: Allow
-      Action:
-        - cognito-idp:AdminCreateUser
-        - cognito-idp:AdminUpdateUserAttributes
-      Resource: "arn:aws:cognito-idp:us-east-1:270100954870:userpool/us-east-1_i0CmHMrGQ"
 
 functions:
   app:
