@@ -11,7 +11,8 @@
   "scripts": {
     "dev": "nodemon -r tsconfig-paths/register src/main.ts",
     "test": "jest",
-    "deploy": "serverless deploy --stage=dev"
+    "deploy:dev": "serverless deploy --stage=dev",
+    "deploy:prod": "serverless deploy --stage=prod"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",

@@ -4,11 +4,11 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: us-east-1
-  stage: ${opt:stage, 'dev'}
+  stage: ${opt:stage, env:STAGE, 'dev'}
   environment:
     STAGE: ${self:provider.stage}
-    JWT_SECRET: "secret"
-    MONGODB_URI: "mongodb+srv://shayan:whFQgge7Cv9ocfo8DYGE@pestico-manager.jaqcn3o.mongodb.net"
+    JWT_SECRET: ${env:JWT_SECRET}
+    MONGODB_URI: ${env:MONGODB_URI}
   iamRoleStatements:
     - Effect: Allow
       Action:
