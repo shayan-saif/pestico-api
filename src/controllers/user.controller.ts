@@ -19,7 +19,7 @@ class UserController {
 
       users = await this.userService.getUsers({
         ...query,
-        deleted_at: query.deleted_at ? { $exists: true } : undefined,
+        deleted_at: query.deleted_at ? { $exists: true } : null,
         name: { $regex: new RegExp(query.name, "i") },
       });
 
