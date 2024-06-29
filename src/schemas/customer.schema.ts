@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { Category, Status } from "@/models/customer.model";
+import { Category, CustomerStatus } from "@/models/customer.model";
 
 export const CreateBody = z
   .object({
     name: z.string().optional(),
-    status: z.nativeEnum(Status).optional(),
+    status: z.nativeEnum(CustomerStatus).optional(),
     category: z.nativeEnum(Category).optional(),
     address: z.string().optional(),
     address2: z.string().optional(),

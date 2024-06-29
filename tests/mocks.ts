@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { Category, ICustomer, Status } from "@/models/customer.model";
+import { Category, ICustomer, CustomerStatus } from "@/models/customer.model";
 import { faker } from "@faker-js/faker";
 
 export function buildMockCustomer(
@@ -8,7 +8,7 @@ export function buildMockCustomer(
 ): ICustomer {
   return {
     name: faker.company.name(),
-    status: Status.ACTIVE,
+    status: CustomerStatus.ACTIVE,
     category: Category.BUSINESS,
     address: faker.location.streetAddress(),
     address2: faker.location.secondaryAddress(),

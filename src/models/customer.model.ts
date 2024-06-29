@@ -1,6 +1,6 @@
 import { Document, model, Schema, Types } from "mongoose";
 
-export enum Status {
+export enum CustomerStatus {
   ACTIVE = "ACTIVE",
   INACTIVE = "INACTIVE",
 }
@@ -12,7 +12,7 @@ export enum Category {
 
 export interface ICustomer {
   name: string;
-  status: Status;
+  status: CustomerStatus;
   category: Category;
   address?: string;
   address2?: string;
@@ -32,8 +32,8 @@ const CustomerSchema: Schema = new Schema({
   name: { type: String, required: true, unique: true },
   status: {
     type: String,
-    enum: [Status.ACTIVE, Status.INACTIVE],
-    default: Status.ACTIVE,
+    enum: [CustomerStatus.ACTIVE, CustomerStatus.INACTIVE],
+    default: CustomerStatus.ACTIVE,
   },
   category: {
     type: String,

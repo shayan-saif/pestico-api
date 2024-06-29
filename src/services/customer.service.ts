@@ -39,6 +39,13 @@ class CustomerService {
     return existingCustomer.toObject();
   }
 
+  public async createCustomer(
+    customer: ICustomer,
+  ): Promise<HydratedDocument<ICustomer>> {
+    const newCustomer = await CustomerModel.create(customer);
+    return newCustomer.toObject();
+  }
+
   public async updateCustomer(
     id: string,
     update: Partial<ICustomer>,

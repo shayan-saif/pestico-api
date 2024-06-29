@@ -13,6 +13,10 @@ router.get("/:id", verifyToken, (req: Request, res: Response) =>
   customerController.getCustomer(req, res),
 );
 
+router.post("/", verifyToken, async (req: Request, res: Response) =>
+  customerController.createCustomer(req, res),
+);
+
 router.patch("/:id", verifyToken, async (req: Request, res: Response) =>
   customerController.updateCustomer(req, res),
 );

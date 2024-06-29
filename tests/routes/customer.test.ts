@@ -3,7 +3,7 @@ import app from "@/app";
 import AuthService from "@/services/auth.service";
 import CustomerModel from "@/models/customer.model";
 import { Types } from "mongoose";
-import { buildMockCustomer } from "../mocks/customer";
+import { buildMockCustomer } from "../mocks";
 
 describe("/customer", () => {
   let authService: AuthService;
@@ -89,7 +89,7 @@ describe("/customer", () => {
       expect(response.body.customers).toHaveLength(3);
     });
 
-    it("should not return deleted customers", async () => {
+    it("should not return deleted customer records", async () => {
       await CustomerModel.create(
         buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
       );
@@ -174,7 +174,7 @@ describe("/customer", () => {
       expect(response.body).toHaveProperty("customer");
     });
 
-    it("should return 404 if querying a deleted customer", async () => {
+    it("should return 404 if querying a deleted customer record", async () => {
       const deletedCustomer = await CustomerModel.create(
         buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
       );
@@ -190,6 +190,48 @@ describe("/customer", () => {
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty("error");
       expect(response.body.error).toBe("Customer not found");
+    });
+  });
+
+  describe("POST /customer", () => {
+    it("should return 401 if no token is provided", async () => {
+      const response = await request(app).post("/customer");
+      expect(response.status).toBe(401);
+    });
+
+    it("should return 403 if invalid token is provided", async () => {
+      const response = await request(app)
+        .post("/customer")
+        .set("Authorization", "Bearer invalid");
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should return 403 if the user is not an admin", async () => {
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: user.email, password: user.password });
+
+      const response = await request(app)
+        .post("/customer")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`)
+        .send(buildMockCustomer(userId));
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should return 201 if the user is an admin", async () => {
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .post("/customer")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`)
+        .send(buildMockCustomer(userId));
+
+      expect(response.status).toBe(201);
+      expect(response.body).toHaveProperty("customer");
     });
   });
 
@@ -341,7 +383,7 @@ describe("/customer", () => {
       expect(response.body.customer.user_id).toBe("6679ffe2dc6c10ac1b61b54c");
     });
 
-    it("should return 404 if updating a deleted customer", async () => {
+    it("should return 404 if updating a deleted customer record", async () => {
       const deletedCustomer = await CustomerModel.create(
         buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
       );

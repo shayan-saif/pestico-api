@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ForbiddenError, handleErrors } from "@/utils/errors";
 import { scope } from "@/utils/auth";
 import { validateBody } from "@/schemas";
-import { UpdateBody } from "@/schemas/customer.schema";
+import { CreateBody, UpdateBody } from "@/schemas/customer.schema";
 import CustomerService from "@/services/customer.service";
 import { HydratedDocument, Types } from "mongoose";
 import { ICustomer } from "@/models/customer.model";
@@ -49,6 +49,22 @@ class CustomerController {
 
       return res.status(200).json({
         customer,
+      });
+    } catch (error) {
+      handleErrors(error, res);
+    }
+  }
+
+  @scope()
+  public async createCustomer(req: Request, res: Response) {
+    try {
+      const newCustomer = validateBody(req, CreateBody);
+
+      const createdCustomer = await this.customerService.createCustomer(newCustomer);
+
+      return res.status(201).json({
+        message: "Customer created",
+        customer: createdCustomer,
       });
     } catch (error) {
       handleErrors(error, res);
