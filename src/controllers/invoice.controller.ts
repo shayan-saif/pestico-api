@@ -42,9 +42,7 @@ class InvoiceController {
       const invoice = await this.invoiceService.getInvoiceById(invoiceId);
 
       if (!isAdmin && !requestingUserId?.equals(invoice.user_id)) {
-        throw new ForbiddenError(
-          "You are not authorized to view this invoice",
-        );
+        throw new ForbiddenError("You are not authorized to view this invoice");
       }
 
       return res.status(200).json({
@@ -60,7 +58,8 @@ class InvoiceController {
     try {
       const newInvoice = validateBody(req, CreateBody);
 
-      const createdInvoice = await this.invoiceService.createInvoice(newInvoice);
+      const createdInvoice =
+        await this.invoiceService.createInvoice(newInvoice);
 
       return res.status(201).json({
         message: "Invoice created",
@@ -70,7 +69,6 @@ class InvoiceController {
       handleErrors(error, res);
     }
   }
-
 
   @scope()
   public async updateInvoice(req: Request, res: Response) {

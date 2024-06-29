@@ -60,7 +60,8 @@ class CustomerController {
     try {
       const newCustomer = validateBody(req, CreateBody);
 
-      const createdCustomer = await this.customerService.createCustomer(newCustomer);
+      const createdCustomer =
+        await this.customerService.createCustomer(newCustomer);
 
       return res.status(201).json({
         message: "Customer created",

@@ -1,10 +1,19 @@
-import { Request, Response } from "express";
+import { Request } from "express";
 import { ZodSchema } from "zod";
 import { InvalidBodyError } from "@/utils/errors";
 
+export function validateQuery(request: Request, schema: ZodSchema) {
+  const { query } = request;
+  return validateData(schema, query);
+}
+
 export function validateBody(request: Request, schema: ZodSchema) {
   const { body } = request;
-  const parsed = schema.safeParse(body);
+  return validateData(schema, body);
+}
+
+function validateData(schema: ZodSchema, data: any) {
+  const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
     const errors = JSON.stringify(parsed.error.errors);

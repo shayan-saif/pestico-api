@@ -11,9 +11,9 @@ describe("/user", () => {
   const user = {
     email: "testuser@example.ca",
     password: "somelongpassword",
-    name: "Test UserModel",
+    name: "Test User",
     is_admin: false,
-    permissions: ["user:read", "user:update"],
+    permissions: ["user:update"],
     address: "1234 Test St",
     address2: "Apt 123",
     city: "Test City",
@@ -24,6 +24,7 @@ describe("/user", () => {
 
   const adminUser = {
     ...user,
+    name: "Test Admin UserModel",
     email: "testadminuser@example.ca",
     is_admin: true,
   };
@@ -54,7 +55,7 @@ describe("/user", () => {
       expect(response.status).toBe(403);
     });
 
-    it("should return 200 if a user is not an admin, should return an array with just their own user record", async () => {
+    it("should return 403 if a user is not an admin", async () => {
       const loginResponse = await request(app)
         .post("/auth/login")
         .send({ email: user.email, password: user.password });
@@ -63,10 +64,7 @@ describe("/user", () => {
         .get("/user")
         .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("users");
-      expect(response.body.users).toHaveLength(1);
-      expect(response.body.users[0]).not.toHaveProperty("password");
+      expect(response.status).toBe(403);
     });
 
     it("should return the list of users if a user is an admin", async () => {
@@ -98,6 +96,55 @@ describe("/user", () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("users");
       expect(response.body.users).toHaveLength(1);
+    });
+
+    it("should query a user by name using regex query", async () => {
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/user?name=adm")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("users");
+      expect(response.body.users).toHaveLength(1);
+      expect(response.body.users[0].name).toBe(adminUser.name);
+    });
+
+    it("should filter admin users", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/user?is_admin=true")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("users");
+      expect(response.body.users).toHaveLength(1);
+      expect(response.body.users[0].name).toBe(adminUser.name);
+    });
+
+    it("should filter for deleted users", async () => {
+      await userService.deleteUser(userId);
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/user?deleted_at=true")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("users");
+      expect(response.body.users).toHaveLength(1);
+      expect(response.body.users[0].name).toBe(user.name);
     });
   });
 

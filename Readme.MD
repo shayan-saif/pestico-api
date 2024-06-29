@@ -1,6 +1,7 @@
 ### Environment Variables
 
 .env
+
 ```
 STAGE: dev
 JWT_SECRET: some_secret

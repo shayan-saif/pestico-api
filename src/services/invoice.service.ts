@@ -72,9 +72,7 @@ class InvoiceService {
     return updatedInvoice.toObject();
   }
 
-  public async deleteInvoice(
-    id: string,
-  ): Promise<HydratedDocument<IInvoice>> {
+  public async deleteInvoice(id: string): Promise<HydratedDocument<IInvoice>> {
     if (!isValidObjectId(id)) {
       throw new InvalidBodyError("Invalid id");
     }

@@ -93,7 +93,9 @@ describe("/invoice", () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
       await InvoiceModel.create(buildMockInvoice(userId, customer.id));
       await InvoiceModel.create(
-        buildMockInvoice(userId, customer.id, { deleted_at: new Date().toISOString() }),
+        buildMockInvoice(userId, customer.id, {
+          deleted_at: new Date().toISOString(),
+        }),
       );
 
       const loginResponse = await request(app)
@@ -113,7 +115,9 @@ describe("/invoice", () => {
   describe("GET /invoice/:id", () => {
     it("should return 401 if no token is provided", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const response = await request(app).get(`/invoice/${invoice._id}`);
       expect(response.status).toBe(401);
@@ -121,7 +125,9 @@ describe("/invoice", () => {
 
     it("should return 403 if invalid token is provided", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const response = await request(app)
         .get(`/invoice/${invoice._id}`)
@@ -132,7 +138,9 @@ describe("/invoice", () => {
 
     it("should return 200 if a user is accessing their own invoice record", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")
@@ -187,7 +195,11 @@ describe("/invoice", () => {
 
     it("should return 404 if querying a deleted invoice", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const deletedInvoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id, { deleted_at: new Date().toISOString() }));
+      const deletedInvoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id, {
+          deleted_at: new Date().toISOString(),
+        }),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")
@@ -224,7 +236,7 @@ describe("/invoice", () => {
 
       const response = await request(app)
         .post("/invoice")
-        .set("Authorization", `Bearer ${loginResponse.body.token}`)
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
       expect(response.status).toBe(403);
     });
@@ -249,7 +261,9 @@ describe("/invoice", () => {
   describe("PATCH /invoice/:id", () => {
     it("should return 401 if no token is provided", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const response = await request(app).patch(`/invoice/${invoice._id}`);
       expect(response.status).toBe(401);
@@ -257,7 +271,9 @@ describe("/invoice", () => {
 
     it("should return 403 if invalid token is provided", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const response = await request(app)
         .patch(`/invoice/${invoice.id}`)
@@ -270,7 +286,9 @@ describe("/invoice", () => {
       const customerByAdmin = await CustomerModel.create(
         buildMockCustomer(adminUserId),
       );
-      const invoiceByAdmin = await InvoiceModel.create(buildMockInvoice(adminUserId, customerByAdmin.id));
+      const invoiceByAdmin = await InvoiceModel.create(
+        buildMockInvoice(adminUserId, customerByAdmin.id),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")
@@ -285,7 +303,9 @@ describe("/invoice", () => {
 
     it("should return 403 if the user is updating their own invoice record", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")
@@ -314,7 +334,13 @@ describe("/invoice", () => {
       const response = await request(app)
         .patch(`/invoice/${invoiceByUser._id}`)
         .set("Authorization", `Bearer ${loginResponse.body.token}`)
-        .send({ description: "Updated Description", jobs: ["BEDBUG"], amount: 510, service_date: new Date().toISOString(), payment_date: new Date().toISOString() });
+        .send({
+          description: "Updated Description",
+          jobs: ["BEDBUG"],
+          amount: 510,
+          service_date: new Date().toISOString(),
+          payment_date: new Date().toISOString(),
+        });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty("invoice");
@@ -332,7 +358,9 @@ describe("/invoice", () => {
 
     it("should return 400 if an admin is updating the [customer_id, user_id] field on another user's invoice record", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")
@@ -350,8 +378,12 @@ describe("/invoice", () => {
     });
 
     it("should return 404 if an admin is updating a deleted invoice record", async () => {
-      const customer = await CustomerModel.create(buildMockCustomer(userId),);
-      const deletedInvoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id, { deleted_at: new Date().toISOString() }));
+      const customer = await CustomerModel.create(buildMockCustomer(userId));
+      const deletedInvoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id, {
+          deleted_at: new Date().toISOString(),
+        }),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")
@@ -371,7 +403,9 @@ describe("/invoice", () => {
   describe("DELETE /invoice/:id", () => {
     it("should return 401 if no token is provided", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const response = await request(app).delete(`/invoice/${invoice._id}`);
       expect(response.status).toBe(401);
@@ -379,7 +413,9 @@ describe("/invoice", () => {
 
     it("should return 403 if invalid token is provided", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const invoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id));
+      const invoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id),
+      );
 
       const response = await request(app)
         .delete(`/invoice/${invoice._id}`)
@@ -444,7 +480,11 @@ describe("/invoice", () => {
 
     it("should return 404 if deleting a deleted invoice record", async () => {
       const customer = await CustomerModel.create(buildMockCustomer(userId));
-      const deletedInvoice = await InvoiceModel.create(buildMockInvoice(userId, customer.id, { deleted_at: new Date().toISOString() }));
+      const deletedInvoice = await InvoiceModel.create(
+        buildMockInvoice(userId, customer.id, {
+          deleted_at: new Date().toISOString(),
+        }),
+      );
 
       const loginResponse = await request(app)
         .post("/auth/login")

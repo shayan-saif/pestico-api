@@ -2,25 +2,26 @@ import { Request, Response } from "express";
 import { ForbiddenError, handleErrors } from "@/utils/errors";
 import UserService from "@/services/user.service";
 import { scope } from "@/utils/auth";
-import { validateBody } from "@/schemas";
-import { UpdateBody } from "@/schemas/user.schema";
+import { validateBody, validateQuery } from "@/schemas";
+import { StringQuery, UpdateBody } from "@/schemas/user.schema";
 import { IUser } from "@/models/user.model";
 import { HydratedDocument, Types } from "mongoose";
 
 class UserController {
   constructor(private userService = new UserService()) {}
 
-  @scope("user:read")
+  @scope()
   public async getUsers(req: Request, res: Response) {
     try {
-      const requestingUser = req.user;
+      const query = validateQuery(req, StringQuery);
+
       let users: HydratedDocument<IUser>[];
 
-      if (requestingUser?.is_admin) {
-        users = await this.userService.getUsers();
-      } else {
-        users = Array(await this.userService.getUserById(requestingUser?._id));
-      }
+      users = await this.userService.getUsers({
+        ...query,
+        deleted_at: query.deleted_at ? { $exists: true } : undefined,
+        name: { $regex: new RegExp(query.name, "i") },
+      });
 
       return res.status(200).json({
         users,
