@@ -162,7 +162,7 @@ describe("/user", () => {
       expect(response.status).toBe(403);
     });
 
-    it("should return 200 if a user is accessing their own user record", async () => {
+    it("should return 403 if a user is not an admin", async () => {
       const loginResponse = await request(app)
         .post("/auth/login")
         .send({ email: user.email, password: user.password });
@@ -171,9 +171,7 @@ describe("/user", () => {
         .get(`/user/${userId}`)
         .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("user");
-      expect(response.body.user).not.toHaveProperty("password");
+      expect(response.status).toBe(403);
     });
 
     it("should return 403 if a user is not an admin and is trying to access another user's record", async () => {

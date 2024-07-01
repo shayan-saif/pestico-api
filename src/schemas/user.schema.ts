@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Types } from "mongoose";
 
-export const StringQuery = z.object({
+export const UserStringQuery = z.object({
   name: z.string().optional(),
   is_admin: z.coerce.boolean().optional(),
   deleted_at: z.coerce.boolean().optional(),

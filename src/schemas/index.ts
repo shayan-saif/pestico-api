@@ -1,6 +1,9 @@
+import { z } from "zod";
 import { Request } from "express";
 import { ZodSchema } from "zod";
 import { InvalidBodyError } from "@/utils/errors";
+import { CustomerStringQuery } from "./customer.schema";
+import { UserStringQuery } from "./user.schema";
 
 export function validateQuery(request: Request, schema: ZodSchema) {
   const { query } = request;
@@ -22,3 +25,7 @@ function validateData(schema: ZodSchema, data: any) {
 
   return parsed.data;
 }
+
+export const StringQueryUnion = z.union([CustomerStringQuery, UserStringQuery]);
+
+export type StringQueryUnion = z.infer<typeof StringQueryUnion>;

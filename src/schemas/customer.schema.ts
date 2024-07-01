@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { Category, CustomerStatus } from "@/models/customer.model";
 
+export const CustomerStringQuery = z.object({
+  name: z.string().optional(),
+  status: z.nativeEnum(CustomerStatus).optional(),
+  category: z.nativeEnum(Category).optional(),
+  deleted_at: z.coerce.boolean().optional(),
+});
+
 export const CreateBody = z
   .object({
     name: z.string().optional(),

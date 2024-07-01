@@ -89,6 +89,92 @@ describe("/customer", () => {
       expect(response.body.customers).toHaveLength(3);
     });
 
+    it("should query customer records by name", async () => {
+      await CustomerModel.create(
+        buildMockCustomer(userId, { name: "company" }),
+      );
+      await CustomerModel.create(
+        buildMockCustomer(userId, { name: "organization" }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/customer?name=compa")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("customers");
+      expect(response.body.customers).toHaveLength(1);
+      expect(response.body.customers[0].name).toBe("company");
+    });
+
+    it("should filter customer records by status", async () => {
+      await CustomerModel.create(
+        buildMockCustomer(userId, { status: "ACTIVE" }),
+      );
+      await CustomerModel.create(
+        buildMockCustomer(userId, { status: "INACTIVE" }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/customer?status=INACTIVE")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("customers");
+      expect(response.body.customers).toHaveLength(1);
+      expect(response.body.customers[0].status).toBe("INACTIVE");
+    });
+
+    it("should filter customer records by category", async () => {
+      await CustomerModel.create(
+        buildMockCustomer(userId, { category: "BUSINESS" }),
+      );
+      await CustomerModel.create(
+        buildMockCustomer(userId, { category: "HOMECALL" }),
+      );
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/customer?category=HOMECALL")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("customers");
+      expect(response.body.customers).toHaveLength(1);
+      expect(response.body.customers[0].category).toBe("HOMECALL");
+    });
+
+    it("should filter deleted customer records", async () => {
+      await CustomerModel.create(
+        buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
+      );
+      await CustomerModel.create(buildMockCustomer(userId));
+      await CustomerModel.create(buildMockCustomer(adminUserId));
+
+      const loginResponse = await request(app)
+        .post("/auth/login")
+        .send({ email: adminUser.email, password: adminUser.password });
+
+      const response = await request(app)
+        .get("/customer?deleted_at=true")
+        .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("customers");
+      expect(response.body.customers).toHaveLength(1);
+    });
+
     it("should not return deleted customer records", async () => {
       await CustomerModel.create(
         buildMockCustomer(userId, { deleted_at: new Date().toISOString() }),
@@ -306,7 +392,7 @@ describe("/customer", () => {
     });
 
     it("should return 409 if a user is updating a name that is taken", async () => {
-      const customer1 = await CustomerModel.create(
+     await CustomerModel.create(
         buildMockCustomer(userId, {
           name: "Test Name",
         }),

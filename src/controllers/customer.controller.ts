@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import { ForbiddenError, handleErrors } from "@/utils/errors";
 import { scope } from "@/utils/auth";
-import { validateBody } from "@/schemas";
-import { CreateBody, UpdateBody } from "@/schemas/customer.schema";
+import { validateBody, validateQuery } from "@/schemas";
+import {
+  CreateBody,
+  CustomerStringQuery,
+  UpdateBody,
+} from "@/schemas/customer.schema";
 import CustomerService from "@/services/customer.service";
 import { HydratedDocument, Types } from "mongoose";
 import { ICustomer } from "@/models/customer.model";
@@ -13,13 +17,23 @@ class CustomerController {
   @scope("customer:read")
   public async getCustomers(req: Request, res: Response) {
     try {
+      const query = validateQuery(req, CustomerStringQuery);
       const requestingUser = req.user;
       let customers: HydratedDocument<ICustomer>[];
 
+      const filter = {
+        ...query,
+        deleted_at: query.deleted_at ? { $exists: true } : null,
+        category: query.category ? query.category : { $exists: true },
+        status: query.status ? query.status : { $exists: true },
+        name: { $regex: new RegExp(query.name, "i") },
+      };
+
       if (requestingUser?.is_admin) {
-        customers = await this.customerService.getCustomers();
+        customers = await this.customerService.getCustomers(filter);
       } else {
         customers = await this.customerService.getCustomers({
+          ...filter,
           user_id: requestingUser?._id,
         });
       }

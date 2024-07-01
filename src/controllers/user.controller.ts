@@ -3,7 +3,7 @@ import { ForbiddenError, handleErrors } from "@/utils/errors";
 import UserService from "@/services/user.service";
 import { scope } from "@/utils/auth";
 import { validateBody, validateQuery } from "@/schemas";
-import { StringQuery, UpdateBody } from "@/schemas/user.schema";
+import { UserStringQuery, UpdateBody } from "@/schemas/user.schema";
 import { IUser } from "@/models/user.model";
 import { HydratedDocument, Types } from "mongoose";
 
@@ -13,15 +13,17 @@ class UserController {
   @scope()
   public async getUsers(req: Request, res: Response) {
     try {
-      const query = validateQuery(req, StringQuery);
+      const query = validateQuery(req, UserStringQuery);
 
       let users: HydratedDocument<IUser>[];
 
-      users = await this.userService.getUsers({
+      const filter = {
         ...query,
         deleted_at: query.deleted_at ? { $exists: true } : null,
         name: { $regex: new RegExp(query.name, "i") },
-      });
+      };
+
+      users = await this.userService.getUsers(filter);
 
       return res.status(200).json({
         users,
